@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+
+<script src="thumbnail.js"></script>
+
+</head>
+<body class="available">
+    <h1>jack's image process room</h1>
+
+    <p><label for="file">load image file:</label> <input id="file" type="file"></p>
+
+    <br>
+    <p id="my_history">history:  </p>
+    <br>
+    <button type="button" onclick="go_back()"><font color=blue>Go Back</font></button>
+
+    <br>
+    <p id="temp">haha</p>
+    <br>
+
+<div id="algorithms">
+	algorithm:  
+	<button type="button" onclick="algo_func('gray')"><font color=red>Gray</font></button>
+	<button type="button" onclick="algo_func('invert')"><font color=red>Invert</font></button>
+	<button type="button" onclick="algo_func('thumbnail')"><font color=red>Thumbnail</font></button>
+</div>
+
+	<br>
+	<canvas id="myCanvas_orgi" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none"
+                onmousemove="mouse_move(event)" onmousedown="mouse_down(event)"  onmouseup="mouse_up(event)">
+	</canvas>
+	<br>
+	<canvas id="myCanvas_algo" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none"
+                onmousemove="mouse_move(event)" onmousedown="mouse_down(event)"  onmouseup="mouse_up(event)">
+	</canvas>
+
+    <footer>
+        <p>hello world</p>
+    </footer>
+
+<script>
+var g_file_string = "";
+var g_bmp_worker;
+var g_algo_worker;
+var g_my_canvas =document.getElementById("myCanvas_orgi");
+var g_my_canvas_cxt = g_my_canvas.getContext("2d");
+var g_orgi_img_flag = 1;
+
+var g_my_canvas_algo =document.getElementById("myCanvas_algo");
+var g_my_canvas_cxt_algo = g_my_canvas_algo.getContext("2d");
+
+//var g_my_canvas2 =document.getElementById("myCanvas2");
+//var g_my_canvas2_cxt = g_my_canvas2.getContext("2d");
+
+var g_my_history = document.getElementById("my_history");
+
+var g_img_width = 0;
+var g_img_heigth = 0;
+
+var g_fill_pixels_flag = 0;
+var g_thumbnail_state = 'thumbnail_idle';
+
+////////////////////////////////////////////////////////// algo
+
+function algo_func(type) {
+        g_my_history.innerHTML += type + " -> ";
+        if (g_orgi_img_flag == 1) {
+                var canvas_img_data = g_my_canvas_cxt.getImageData(0,0,g_my_canvas.width, g_my_canvas.height);
+                var new_img_data = g_my_canvas_cxt_algo.createImageData(g_my_canvas.width, g_my_canvas.height);
+                //alert("w: " + canvas_img_data.width + ", h: " + canvas_img_data.height);
+                g_orgi_img_flag = 0;
+                console.log("haha if: " + type);
+        } else {
+                var canvas_img_data = g_my_canvas_cxt_algo.getImageData(0,0,g_my_canvas_algo.width, g_my_canvas_algo.height);
+                var new_img_data = g_my_canvas_cxt_algo.createImageData(g_my_canvas_algo.width, g_my_canvas_algo.height);
+                console.log("haha else: " + type);
+        }
+	switch(type) {
+		case "gray":
+			for (var i=0;i<canvas_img_data.width*canvas_img_data.height*4;i+=4) {
+				var sum = (canvas_img_data.data[i] + canvas_img_data.data[i+1] + canvas_img_data.data[i+2])/3;
+				new_img_data.data[i] = new_img_data.data[i+1] = new_img_data.data[i+2] = sum;
+                                new_img_data.data[i+3] =  canvas_img_data.data[i+3]; 
+			}
+			//alert("w: " + canvas_img_data.width + ", h: " + canvas_img_data.height + " " + s);
+			console.log(new_img_data.data);
+			break;
+		case "invert":
+			for (let i = 0; i < canvas_img_data.data.length; i += 4) {
+				new_img_data.data[i] = 255 - canvas_img_data.data[i];
+				new_img_data.data[i + 1] = 255 - canvas_img_data.data[i + 1];
+				new_img_data.data[i + 2] = 255 - canvas_img_data.data[i + 2];
+				new_img_data.data[i+3] =  canvas_img_data.data[i+3]; 
+			}
+			console.log(new_img_data);
+			break;
+		case "thumbnail":
+			var new_img_data = algo_thumbnail(canvas_img_data, g_move_x, g_move_y);
+			//console.log(algo_img_data);
+			return;
+			break;
+		default:
+			break;
+	}
+
+	g_my_canvas.style.display='none';
+	g_my_canvas_algo.style.display='block';
+	g_my_canvas_algo.width = new_img_data.width;
+	g_my_canvas_algo.height = new_img_data.height;
+	g_my_canvas_cxt_algo.putImageData(new_img_data, 0,0);
+//	g_my_canvas_cxt.putImageData(canvas_img_data, 0,0);
+
+	return;
+
+	console.log(canvas_img_data.data);
+	g_algo_worker = new Worker("algo.js");
+	g_algo_worker.postMessage("alog:invert");
+	g_algo_worker.postMessage([canvas_img_data.width, canvas_img_data.height,canvas_img_data.data]);
+
+	g_algo_worker.onmessage = function(evt) {
+		//console.log(evt.data);
+		draw_img_work_handle(evt.data);
+	}
+}
+
+
+var g_start_x = 0;
+var g_start_y = 0;
+var g_move_x = 0;
+var g_move_y = 0;
+function mouse_down(e) {
+	//if (g_thumbnail_state != 'thumbnail_start')
+	//        return;
+	if (e.button != 1)
+		return;
+	g_thumbnail_state = 'thumbnail_down';
+	g_start_x = e.offsetX;
+	g_start_y = e.offsetY;
+}
+function mouse_move(e) {
+	if (g_thumbnail_state == 'thumbnail_down') {
+		document.getElementById("temp").innerHTML = "x:" + e.offsetX+ ", " + "y:" + e.offsetY;
+	}
+}
+function mouse_up(e) {
+	g_thumbnail_state = 'thumbnail_idle';
+	g_move_x = e.offsetX - g_start_x;
+	g_move_y = e.offsetY - g_start_y;
+	console.log(g_move_x +" " + g_move_y);
+	algo_func("thumbnail");
+
+}
+
+
+////////////////////////////////////////////////////////// img store,draw
+
+//the picture return to the origi
+function go_back() {
+	g_my_canvas.style.display='block';
+	g_my_canvas_algo.style.display='none';
+	g_orgi_img_flag = 1;
+	g_my_history.innerHTML = "history:  ";
+}
+
+
+function draw_bmp_img(cmd) {
+	var string_cmd = cmd.split(",");
+	//console.log(string_cmd);
+	var x = string_cmd[0];
+	var y = g_img_heigth - string_cmd[1];
+
+	for (var i=0;i<10;i++) {
+		var rgb_string = string_cmd[i+2];
+		g_my_canvas_cxt.fillStyle = rgb_string;
+		x++;
+		if (x >= g_img_width) {
+			x = 0;
+			y--;
+		}
+		g_my_canvas_cxt.fillRect(x,y,1,1);
+	}
+}
+
+function draw_img_work_handle(cmd) {
+
+	var img_type = cmd.slice(0,5);
+
+	if (img_type == "img_z") {
+		console.log("img process done");
+		g_bmp_worker.terminate();
+		g_fill_pixels_flag = 0;
+	}
+
+	if (g_fill_pixels_flag == 1) {
+		draw_bmp_img(cmd);
+		return;
+	}
+
+	if (img_type == "img_w") {
+		g_img_width = Number(cmd.slice(5));
+		g_my_canvas.width = g_img_width;
+		//g_my_canvas2.width = g_img_width;
+	}
+	if (img_type == "img_h") {
+		g_img_heigth= Number(cmd.slice(5));
+		g_my_canvas.height = g_img_heigth;
+		//g_my_canvas2.height = g_img_heigth;
+	}
+
+	if (img_type == "img_d") {
+		g_fill_pixels_flag = 1;
+	}
+
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    var upload = document.getElementById('file');
+
+    if (!window.FileReader) {
+        return;
+    } else {
+        document.body.className = 'available';
+        upload.disabled = false;
+    }
+
+    upload.onchange = function (e) {
+        e.preventDefault();
+        
+        var file = upload.files[0];
+        var reader = new FileReader();
+		reader.onload = function(event) {
+			go_back();
+			//console.log(reader.result);
+			//var img_data_array = (new Uint8Array(reader.result)).subarray(0, file.size);
+			//console.log(img_data_array);
+			g_file_string = reader.result;
+
+			g_bmp_worker.postMessage(reader.result);
+
+		};
+		//reader.readAsBinaryString(file);
+        reader.readAsArrayBuffer(file);
+
+		g_bmp_worker = new Worker("bmp.js");
+		g_bmp_worker.onmessage = function(evt) {
+			//console.log(evt.data);
+			draw_img_work_handle(evt.data);
+		}
+
+        return false;
+    };
+}, false);
+</script>
+
+
+</body></html>

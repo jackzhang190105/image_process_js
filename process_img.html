@@ -16,24 +16,20 @@
     <br>
     <button type="button" onclick="go_back()"><font color=blue>Go Back</font></button>
 
-    <br>
-    <p id="temp">haha</p>
-    <br>
-
 <div id="algorithms">
 	algorithm:  
 	<button type="button" onclick="algo_func('gray')"><font color=red>Gray</font></button>
 	<button type="button" onclick="algo_func('invert')"><font color=red>Invert</font></button>
 	<button type="button" onclick="algo_func('thumbnail')"><font color=red>Thumbnail</font></button>
+	<input type="text" id="id_ratio_w" value="ratio_w" size="4">
+	<input type="text" id="id_ratio_h" value="ratio_h" size="4">
 </div>
 
 	<br>
-	<canvas id="myCanvas_orgi" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none"
-                onmousemove="mouse_move(event)" onmousedown="mouse_down(event)"  onmouseup="mouse_up(event)">
+	<canvas id="myCanvas_orgi" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none">
 	</canvas>
 	<br>
-	<canvas id="myCanvas_algo" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none"
-                onmousemove="mouse_move(event)" onmousedown="mouse_down(event)"  onmouseup="mouse_up(event)">
+	<canvas id="myCanvas_algo" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none">
 	</canvas>
 
     <footer>
@@ -51,16 +47,14 @@ var g_orgi_img_flag = 1;
 var g_my_canvas_algo =document.getElementById("myCanvas_algo");
 var g_my_canvas_cxt_algo = g_my_canvas_algo.getContext("2d");
 
-//var g_my_canvas2 =document.getElementById("myCanvas2");
-//var g_my_canvas2_cxt = g_my_canvas2.getContext("2d");
-
 var g_my_history = document.getElementById("my_history");
+var g_thumbnail_ratio_w = document.getElementById("id_ratio_w");
+var g_thumbnail_ratio_h = document.getElementById("id_ratio_h");
 
 var g_img_width = 0;
 var g_img_heigth = 0;
 
 var g_fill_pixels_flag = 0;
-var g_thumbnail_state = 'thumbnail_idle';
 
 ////////////////////////////////////////////////////////// algo
 
@@ -97,9 +91,15 @@ function algo_func(type) {
 			console.log(new_img_data);
 			break;
 		case "thumbnail":
-			var new_img_data = algo_thumbnail(canvas_img_data, g_move_x, g_move_y);
-			//console.log(algo_img_data);
-			return;
+			console.log(canvas_img_data.data[8000]);
+			console.log(canvas_img_data.data[8001]);
+			console.log(canvas_img_data.data[8002]);
+			var ratio_w = parseFloat(g_thumbnail_ratio_w.value);
+			var ratio_h = parseFloat(g_thumbnail_ratio_h.value);
+			var new_img_data = algo_thumbnail(canvas_img_data, ratio_w, ratio_h);
+			console.log(new_img_data.data[8000]);
+			console.log(new_img_data.data[8001]);
+			console.log(new_img_data.data[8002]);
 			break;
 		default:
 			break;
@@ -126,32 +126,6 @@ function algo_func(type) {
 }
 
 
-var g_start_x = 0;
-var g_start_y = 0;
-var g_move_x = 0;
-var g_move_y = 0;
-function mouse_down(e) {
-	//if (g_thumbnail_state != 'thumbnail_start')
-	//        return;
-	if (e.button != 1)
-		return;
-	g_thumbnail_state = 'thumbnail_down';
-	g_start_x = e.offsetX;
-	g_start_y = e.offsetY;
-}
-function mouse_move(e) {
-	if (g_thumbnail_state == 'thumbnail_down') {
-		document.getElementById("temp").innerHTML = "x:" + e.offsetX+ ", " + "y:" + e.offsetY;
-	}
-}
-function mouse_up(e) {
-	g_thumbnail_state = 'thumbnail_idle';
-	g_move_x = e.offsetX - g_start_x;
-	g_move_y = e.offsetY - g_start_y;
-	console.log(g_move_x +" " + g_move_y);
-	algo_func("thumbnail");
-
-}
 
 
 ////////////////////////////////////////////////////////// img store,draw

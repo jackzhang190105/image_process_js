@@ -41,10 +41,6 @@ function get_rgb(x, y, img_data) {
 	rgb[2] = img_data.data[pos+2];
 	rgb[3] = img_data.data[pos+3];
 
-	if (x==1000) {
-		console.log(y+ " "+ pos + " " + img_data.data[pos] + " " + rgb);
-	}
-
 	return rgb;
 }
 
@@ -58,30 +54,46 @@ function set_rgb(rgb, x, y, img_data) {
 
 function thumbnail_nearest(canvas_img_data, step_w, step_h, dest_w, dest_h) {
 	var new_img_data = g_my_canvas_cxt_algo.createImageData(dest_w, dest_h);
-	var sum_x = 0;
-	var sum_y = 0;
-
-
-	for (let i=0; i<dest_w*dest_h*4;i++)
-		new_img_data.data[i] = 200;
-
 	for (let x=0; x<dest_w; x++) {
-		sum_x++;
-		sum_y = 0;
 		for (let y=0; y<dest_h; y++) {
 			var x_d = Math.round(x*step_w);
 			var y_d = Math.round(y*step_h);
 			var rgb = get_rgb(x_d,y_d, canvas_img_data);
 			set_rgb(rgb, x, y, new_img_data);
-			sum_y++;
-
 			if (x==1000) {
 				console.log(rgb);
 			}
 		}
 	}
+	return new_img_data;
+}
 
-	console.log("nearest " + sum_x + " " + sum_y + " " + new_img_data.width + "," + dest_w);
+function bilinear_rgb(rgb1, rgb2, rgb3, rgb4, x, y) {
+	var rgb_result = new Array();
+	for (let i=0; i<4; i++) {
+		var x1 = rgb1[i] + (rgb2[i] - rgb1[i]) * x;
+		var x2 = rgb3[i] + (rgb4[i] - rgb3[i]) * x;
+		rgb_result[i] = x1 + (x2 - x1) * y;
+	}
+
+	return rgb_result;
+}
+
+function thumbnail_bilinear(canvas_img_data, step_w, step_h, dest_w, dest_h) {
+	var new_img_data = g_my_canvas_cxt_algo.createImageData(dest_w, dest_h);
+	for (let x=0; x<dest_w; x++) {
+		for (let y=0; y<dest_h; y++) {
+			var x_d = Math.floor(x*step_w);
+			var y_d = Math.floor(y*step_h);
+			var rgb1 = get_rgb(x_d, y_d, canvas_img_data);
+			var rgb2 = get_rgb(x_d+1, y_d, canvas_img_data);
+			var rgb3 = get_rgb(x_d, y_d+1, canvas_img_data);
+			var rgb4 = get_rgb(x_d+1, y_d+1, canvas_img_data);
+			var new_rgb = bilinear_rgb(rgb1, rgb2, rgb3, rgb4, x*step_w-x_d, y*step_h-y_d);
+
+			set_rgb(new_rgb, x, y, new_img_data);
+		}
+	}
 	return new_img_data;
 }
 
@@ -95,7 +107,7 @@ function algo_thumbnail(canvas_img_data, ratio_w, ratio_h)  {
 	console.log(canvas_img_data.width + " " +  canvas_img_data.height+ " " +dest_width + " " + dest_heigth + " " + ratio_w+ " " + ratio_h);
 	console.log("haha " +  " " + " " +dest_width + " " + dest_heigth + " " + step_w + " " + step_h);
 
-	return thumbnail_nearest(canvas_img_data, step_w, step_h, dest_width, dest_heigth);
+	return thumbnail_bilinear(canvas_img_data, step_w, step_h, dest_width, dest_heigth);
 }
 
 

@@ -29,29 +29,6 @@ function algo_thumbnail_interlace_sample(canvas_img_data)  {
 	return new_img_data;
 }
 
-function xy_2_array_pos(x, y, w) {
-	return (x + y*w)*4;
-}
-
-function get_rgb(x, y, img_data) {
-	var pos = xy_2_array_pos(x, y, img_data.width);
-	var rgb = new Array();
-	rgb[0] = img_data.data[pos];
-	rgb[1] = img_data.data[pos+1];
-	rgb[2] = img_data.data[pos+2];
-	rgb[3] = img_data.data[pos+3];
-
-	return rgb;
-}
-
-function set_rgb(rgb, x, y, img_data) {
-	var pos = xy_2_array_pos(x, y, img_data.width);
-	img_data.data[pos] = rgb[0];
-	img_data.data[pos+1] = rgb[1];
-	img_data.data[pos+2] = rgb[2];
-	img_data.data[pos+3] = rgb[3];
-}
-
 function thumbnail_nearest(canvas_img_data, step_w, step_h, dest_w, dest_h) {
 	var new_img_data = g_my_canvas_cxt_algo.createImageData(dest_w, dest_h);
 	for (let x=0; x<dest_w; x++) {

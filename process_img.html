@@ -18,6 +18,7 @@
 
 <div id="algorithms">
 	algorithm:  
+	<button type="button" onclick="algo_func('hist')"><font color=red>Hist</font></button>
 	<button type="button" onclick="algo_func('gray')"><font color=red>Gray</font></button>
 	<button type="button" onclick="algo_func('invert')"><font color=red>Invert</font></button>
 	<button type="button" onclick="algo_func('thumbnail')"><font color=red>Thumbnail</font></button>
@@ -26,6 +27,8 @@
 </div>
 
 	<br>
+	<canvas id="myCanvas_hist" width="300px" height="300px" style="border:1px solid #c3c3c3;display:none">
+	</canvas>
 	<canvas id="myCanvas_orgi" width="400px" height="300px" style="border:1px solid #c3c3c3;display:none">
 	</canvas>
 	<br>
@@ -47,6 +50,9 @@ var g_orgi_img_flag = 1;
 var g_my_canvas_algo =document.getElementById("myCanvas_algo");
 var g_my_canvas_cxt_algo = g_my_canvas_algo.getContext("2d");
 
+var g_my_canvas_hist =document.getElementById("myCanvas_hist");
+var g_my_canvas_cxt_hist = g_my_canvas_hist.getContext("2d");
+
 var g_my_history = document.getElementById("my_history");
 var g_thumbnail_ratio_w = document.getElementById("id_ratio_w");
 var g_thumbnail_ratio_h = document.getElementById("id_ratio_h");
@@ -56,22 +62,59 @@ var g_img_heigth = 0;
 
 var g_fill_pixels_flag = 0;
 
-////////////////////////////////////////////////////////// algo
+////////////////////////////////////////////////////////// algo functions
 
 function algo_func(type) {
-        g_my_history.innerHTML += type + " -> ";
-        if (g_orgi_img_flag == 1) {
-                var canvas_img_data = g_my_canvas_cxt.getImageData(0,0,g_my_canvas.width, g_my_canvas.height);
-                var new_img_data = g_my_canvas_cxt_algo.createImageData(g_my_canvas.width, g_my_canvas.height);
-                //alert("w: " + canvas_img_data.width + ", h: " + canvas_img_data.height);
-                g_orgi_img_flag = 0;
-                console.log("haha if: " + type);
-        } else {
-                var canvas_img_data = g_my_canvas_cxt_algo.getImageData(0,0,g_my_canvas_algo.width, g_my_canvas_algo.height);
-                var new_img_data = g_my_canvas_cxt_algo.createImageData(g_my_canvas_algo.width, g_my_canvas_algo.height);
-                console.log("haha else: " + type);
-        }
+	g_my_history.innerHTML += type + " -> ";
+	if (g_orgi_img_flag == 1) {
+		var canvas_img_data = g_my_canvas_cxt.getImageData(0,0,g_my_canvas.width, g_my_canvas.height);
+		var new_img_data = g_my_canvas_cxt_algo.createImageData(g_my_canvas.width, g_my_canvas.height);
+		//alert("w: " + canvas_img_data.width + ", h: " + canvas_img_data.height);
+		g_orgi_img_flag = 0;
+		console.log("haha if: " + type);
+	} else {
+		var canvas_img_data = g_my_canvas_cxt_algo.getImageData(0,0,g_my_canvas_algo.width, g_my_canvas_algo.height);
+		var new_img_data = g_my_canvas_cxt_algo.createImageData(g_my_canvas_algo.width, g_my_canvas_algo.height);
+		console.log("haha else: " + type);
+	}
 	switch(type) {
+		case "hist":
+			var hist_y = new Array();
+			var hist_r = new Array();
+			var hist_g = new Array();
+			var hist_b = new Array();
+			for (var i=0; i<=255;i++) {
+				hist_y[i] = hist_r[i] = hist_g[i] = hist_b[i] = 0;
+			}
+			for (var i=0;i<canvas_img_data.width*canvas_img_data.height*4;i+=4) {
+				var sum_y = Math.floor((canvas_img_data.data[i] + canvas_img_data.data[i+1] + canvas_img_data.data[i+2])/30);
+				hist_y[sum_y]++;
+				hist_r[Math.floor(canvas_img_data.data[i]/10)]++;
+				hist_g[Math.floor(canvas_img_data.data[i+1]/10)]++;
+				hist_b[Math.floor(canvas_img_data.data[i+2]/10)]++;
+			}
+			console.log(hist_y);
+			console.log(hist_r);
+			var sum1 = 0;
+			var sum2 = 0;
+			var sum3 = 0;
+			var sum4 = 0;
+			for (var i=0; i<=255;i++) {
+				sum1 += hist_y[i];
+				sum2 += hist_r[i];
+				sum3 += hist_g[i];
+				sum4 += hist_b[i];
+			}
+			//console.log("hahah " + temp1_sum + " " + sum1 + " " + sum2 + " " + sum3 + " " + sum4 + " " +(canvas_img_data.width*canvas_img_data.height));
+			for (var i=0; i<=255;i++) {
+				hist_y[i] = hist_y[i]/(canvas_img_data.width*canvas_img_data.height);
+				hist_r[i] = hist_r[i]/(canvas_img_data.width*canvas_img_data.height);
+				hist_g[i] = hist_g[i]/(canvas_img_data.width*canvas_img_data.height);
+				hist_b[i] = hist_b[i]/(canvas_img_data.width*canvas_img_data.height);
+			}
+			console.log(hist_r);
+			draw_hist(hist_y, hist_r, hist_g, hist_b);
+			return;
 		case "gray":
 			for (var i=0;i<canvas_img_data.width*canvas_img_data.height*4;i+=4) {
 				var sum = (canvas_img_data.data[i] + canvas_img_data.data[i+1] + canvas_img_data.data[i+2])/3;
@@ -91,15 +134,9 @@ function algo_func(type) {
 			console.log(new_img_data);
 			break;
 		case "thumbnail":
-			console.log(canvas_img_data.data[8000]);
-			console.log(canvas_img_data.data[8001]);
-			console.log(canvas_img_data.data[8002]);
 			var ratio_w = parseFloat(g_thumbnail_ratio_w.value);
 			var ratio_h = parseFloat(g_thumbnail_ratio_h.value);
 			var new_img_data = algo_thumbnail(canvas_img_data, ratio_w, ratio_h);
-			console.log(new_img_data.data[8000]);
-			console.log(new_img_data.data[8001]);
-			console.log(new_img_data.data[8002]);
 			break;
 		default:
 			break;
@@ -128,7 +165,7 @@ function algo_func(type) {
 
 
 
-////////////////////////////////////////////////////////// img store,draw
+////////////////////////////////////////////////////////// img store,draw functions
 
 //the picture return to the origi
 function go_back() {
@@ -138,6 +175,66 @@ function go_back() {
 	g_my_history.innerHTML = "history:  ";
 }
 
+function xy_2_array_pos(x, y, w) {
+	return (x + y*w)*4;
+}
+
+function get_rgb(x, y, img_data) {
+	var pos = xy_2_array_pos(x, y, img_data.width);
+	var rgb = new Array();
+	rgb[0] = img_data.data[pos];
+	rgb[1] = img_data.data[pos+1];
+	rgb[2] = img_data.data[pos+2];
+	rgb[3] = img_data.data[pos+3];
+
+	return rgb;
+}
+
+function set_rgb(rgb, x, y, img_data) {
+	var pos = xy_2_array_pos(x, y, img_data.width);
+	img_data.data[pos] = rgb[0];
+	img_data.data[pos+1] = rgb[1];
+	img_data.data[pos+2] = rgb[2];
+	img_data.data[pos+3] = rgb[3];
+}
+
+function draw_hist(hist_y, hist_r, hist_g, hist_b) {
+	var width = g_my_canvas_hist.width;
+	var height = g_my_canvas_hist.height;
+	var new_img_data = g_my_canvas_cxt_hist.createImageData(width, height);
+	var sum = 0;
+	for (var i=0; i<=26; i++) {
+		var x0 = i*10;
+		var y0_y = Math.round(height - 10*hist_y[i]*height);
+		var y0_r = Math.round(height - 10*hist_r[i]*height);
+		var y0_g = Math.round(height - 10*hist_g[i]*height);
+		var y0_b = Math.round(height - 10*hist_b[i]*height);
+		var rgb_y = new Array(0,0,0,255);
+		var rgb_r = new Array(255,0,0,255);
+		var rgb_g = new Array(0,255,0,255);
+		var rgb_b = new Array(0,0,255,255);
+		for (var x=x0;x<x0+10; x++) {
+			for (var y=y0_y;y<y0_y+3; y++)
+				set_rgb(rgb_y,x,y,new_img_data);
+		}
+		for (var x=x0;x<x0+10; x++) {
+			for (var y=y0_r;y<y0_r+3; y++)
+				set_rgb(rgb_r,x,y,new_img_data);
+		}
+		for (var x=x0;x<x0+10; x++) {
+			for (var y=y0_g;y<y0_g+3; y++)
+				set_rgb(rgb_g,x,y,new_img_data);
+		}
+		for (var x=x0;x<x0+10; x++) {
+			for (var y=y0_b;y<y0_b+3; y++)
+				set_rgb(rgb_b,x,y,new_img_data);
+		}
+	}
+	g_my_canvas_hist.style.display='block';
+	g_my_canvas_hist.width = width;
+	g_my_canvas_hist.height = height;
+	g_my_canvas_cxt_hist.putImageData(new_img_data, 0, 0);
+}
 
 function draw_bmp_img(cmd) {
 	var string_cmd = cmd.split(",");

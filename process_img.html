@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 
 <script src="thumbnail.js"></script>
+<script src="contrast_stretching.js"></script>
 
 </head>
 <body class="available">
@@ -19,6 +20,8 @@
 <div id="algorithms">
 	algorithm:  
 	<button type="button" onclick="algo_func('hist')"><font color=red>Hist</font></button>
+	<button type="button" onclick="algo_func('contrast')"><font color=red>Contrast</font></button>
+	<input type="range" id="id_contrast_ratio" min="0" max="10" value="0" step="0.1"/>
 	<button type="button" onclick="algo_func('gray')"><font color=red>Gray</font></button>
 	<button type="button" onclick="algo_func('invert')"><font color=red>Invert</font></button>
 	<button type="button" onclick="algo_func('thumbnail')"><font color=red>Thumbnail</font></button>
@@ -56,11 +59,14 @@ var g_my_canvas_cxt_hist = g_my_canvas_hist.getContext("2d");
 var g_my_history = document.getElementById("my_history");
 var g_thumbnail_ratio_w = document.getElementById("id_ratio_w");
 var g_thumbnail_ratio_h = document.getElementById("id_ratio_h");
+var g_contrast_ratio = document.getElementById("id_contrast_ratio");
 
 var g_img_width = 0;
 var g_img_heigth = 0;
 
 var g_fill_pixels_flag = 0;
+
+
 
 ////////////////////////////////////////////////////////// algo functions
 
@@ -115,14 +121,19 @@ function algo_func(type) {
 			console.log(hist_r);
 			draw_hist(hist_y, hist_r, hist_g, hist_b);
 			return;
+		case "contrast":
+			console.log(algo_func.contrast_flag);
+			algo_func.contrast_flag++;
+
+			var contrast_ratio =  g_contrast_ratio.value;
+			algo_contrast_stretching(new_img_data, canvas_img_data, contrast_ratio);
+			break;
 		case "gray":
 			for (var i=0;i<canvas_img_data.width*canvas_img_data.height*4;i+=4) {
 				var sum = (canvas_img_data.data[i] + canvas_img_data.data[i+1] + canvas_img_data.data[i+2])/3;
 				new_img_data.data[i] = new_img_data.data[i+1] = new_img_data.data[i+2] = sum;
-                                new_img_data.data[i+3] =  canvas_img_data.data[i+3]; 
+				new_img_data.data[i+3] =  canvas_img_data.data[i+3]; 
 			}
-			//alert("w: " + canvas_img_data.width + ", h: " + canvas_img_data.height + " " + s);
-			console.log(new_img_data.data);
 			break;
 		case "invert":
 			for (let i = 0; i < canvas_img_data.data.length; i += 4) {
@@ -131,7 +142,6 @@ function algo_func(type) {
 				new_img_data.data[i + 2] = 255 - canvas_img_data.data[i + 2];
 				new_img_data.data[i+3] =  canvas_img_data.data[i+3]; 
 			}
-			console.log(new_img_data);
 			break;
 		case "thumbnail":
 			var ratio_w = parseFloat(g_thumbnail_ratio_w.value);
@@ -173,6 +183,10 @@ function go_back() {
 	g_my_canvas_algo.style.display='none';
 	g_orgi_img_flag = 1;
 	g_my_history.innerHTML = "history:  ";
+}
+
+function stay_origi_img() {
+	g_orgi_img_flag = 1;
 }
 
 function xy_2_array_pos(x, y, w) {
